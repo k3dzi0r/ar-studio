@@ -3,7 +3,7 @@ import { compileTarget } from '../core/recognition/compile'
 import { repo, uid } from '../core/storage/db'
 import { exportPack } from '../core/storage/pack'
 import { DEFAULT_COLLECTION_ID, type ARCard, type ContentItem } from '../core/types'
-import { cardImage, face as drawFace, faceImage, modelGlb, motifs, sounds, type Emotion, type Model, type Motif } from './assets'
+import { cardImage, face as drawFace, faceImage, modelGlb, motifs, planetCredit, sounds, type Emotion, type Model, type Motif } from './assets'
 
 interface CardSpec {
   name: string
@@ -21,7 +21,9 @@ const item = (type: string, name: string, assetId: string | undefined, over: Par
 const modelCard = (name: string, hue: number, kind: Model, sound: () => Blob): CardSpec => ({
   name, hue, motif: motifs[kind],
   content: async (put) => [
-    item('model3d', `${name}.glb`, await put(await modelGlb(kind), `${name}.glb`)),
+    item('model3d', `${name}.glb`, await put(await modelGlb(kind), `${name}.glb`), {
+      credit: kind === 'cube' || kind === 'ball' || kind === 'pyramid' ? undefined : planetCredit,
+    }),
     item('audio', `${name}.wav`, await put(sound(), `${name}.wav`), { props: { loop: false, restart: true } }),
   ],
 })
@@ -98,7 +100,7 @@ export async function buildPack(id: string, log: (s: string) => void) {
   await post(`${id}.jpg`, cover!)
   for (const c of cards) await repo.deleteCard(c.id) // keep the dev DB clean
   log(`${spec.name}: gotowe (${Math.round(pack.size / 1024)} KB)`)
-  return { id, name: spec.name, description: spec.description, file: `${id}.arpack`, cover: `${id}.jpg`, size: pack.size, cards: cards.map((c) => ({ name: c.name, score: c.quality.score })) }
+  return { id, revision: 2, name: spec.name, description: spec.description, file: `${id}.arpack`, cover: `${id}.jpg`, size: pack.size, cards: cards.map((c) => ({ name: c.name, score: c.quality.score })) }
 }
 
 export async function buildAll(log: (s: string) => void) {

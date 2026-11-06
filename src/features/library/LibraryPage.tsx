@@ -73,12 +73,15 @@ export default function LibraryPage() {
       setNotice({ ok: false, text: e instanceof Error ? e.message : 'Import nie powiódł się.' })
     }
   }
-  const addPack = async (p: CatalogPack, thenScan: boolean) => {
+  const addPack = async (p: CatalogPack, thenScan: boolean, previous?: Collection) => {
     setAdding(p.id)
     try {
       const r = await addBuiltIn(p)
+      if (previous?.active) await repo.saveCollection({ ...previous, active: false })
       if (thenScan) return nav('/scan')
-      setNotice({ ok: true, text: `Dodano „${r.collectionName}” (${plural(r.cards)}). Kolekcja jest aktywna.` })
+      setNotice({ ok: true, text: previous
+        ? `Dodano „${r.collectionName}”. Poprzednia kolekcja jest zachowana i wyłączona.`
+        : `Dodano „${r.collectionName}” (${plural(r.cards)}). Kolekcja jest aktywna.` })
       await reload()
     } catch (e) {
       setNotice({ ok: false, text: e instanceof Error ? e.message : 'Nie udało się dodać kolekcji.' })
@@ -170,7 +173,14 @@ export default function LibraryPage() {
           <p className="muted small">Dodaj kolekcję, wydrukuj karty i skieruj na nie kamerę. Wszystko działa później bez internetu.</p>
           <div className="packs" style={{ marginTop: '.8rem' }}>
             {catalog.map((p) => {
-              const installed = collections.find((c) => c.name === p.name || c.name.startsWith(`${p.name} (`))
+              const revision = p.revision ?? 1
+              const installed = collections.find((c) => c.builtIn?.id === p.id && c.builtIn.revision === revision)
+              const previous = collections.find((c) => {
+                if (c.builtIn) return c.builtIn.id === p.id && c.builtIn.revision < revision
+                if (c.name !== p.name && !c.name.startsWith(`${p.name} (`)) return false
+                const members = cards?.filter((card) => card.collectionIds.includes(c.id)) ?? []
+                return p.cards.every((entry) => members.some((card) => card.name === entry.name))
+              })
               return (
                 <article className="pack" key={p.id}>
                   <img src={coverUrl(p)} alt="" loading="lazy" />
@@ -178,12 +188,21 @@ export default function LibraryPage() {
                     <h3>{p.name}</h3>
                     <p className="muted small">{p.description}</p>
                     <p className="muted small">{plural(p.cards.length)} · {p.cards.map((c) => c.name).join(' · ')}</p>
+                    {p.id === 'kosmos' && revision >= 2 && (
+                      <p className="muted small">Tekstury: <a className="credit-link" href="https://www.solarsystemscope.com/textures/"
+                        target="_blank" rel="noreferrer">Solar System Scope</a> · <a className="credit-link"
+                        href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a> · zmniejszone i osadzone w modelach</p>
+                    )}
                     <div className="row">
                       {installed ? (
                         <>
                           <span className="muted small">✓ Dodano</span>
                           <Link className="btn small" to={`/print?collection=${installed.id}`}>Drukuj karty</Link>
                         </>
+                      ) : previous ? (
+                        <button className="btn primary small" disabled={adding !== null} onClick={() => addPack(p, false, previous)}>
+                          {adding === p.id ? 'Pobieranie…' : 'Dodaj odświeżoną wersję'}
+                        </button>
                       ) : (
                         <>
                           <button className="btn primary small" disabled={adding !== null} onClick={() => addPack(p, true)}>

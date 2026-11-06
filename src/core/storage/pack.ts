@@ -1,6 +1,6 @@
 import JSZip from 'jszip'
 import { repo, uid } from './db'
-import type { ARCard, ContentItem } from '../types'
+import type { ARCard, Collection, ContentItem } from '../types'
 
 /**
  * Portable ".arpack" (a zip): manifest.json + assets/<id>. Carries the
@@ -63,7 +63,7 @@ export function validateManifest(m: unknown): Manifest {
 /** Imports into a NEW collection; all ids are regenerated so nothing is overwritten. */
 export async function importPack(
   file: Blob,
-  opts: { activate?: boolean } = {},
+  opts: { activate?: boolean; builtIn?: Collection['builtIn'] } = {},
 ): Promise<{ collectionName: string; collectionId: string; cards: number }> {
   let zip: JSZip
   try {
@@ -91,7 +91,7 @@ export async function importPack(
   const existing = (await repo.listCollections()).map((c) => c.name)
   let colName = manifest.name || 'Import'
   for (let n = 2; existing.includes(colName); n++) colName = `${manifest.name || 'Import'} (${n})`
-  await repo.saveCollection({ id: colId, name: colName, active: opts.activate ?? false, createdAt: Date.now() })
+  await repo.saveCollection({ id: colId, name: colName, active: opts.activate ?? false, builtIn: opts.builtIn, createdAt: Date.now() })
 
   const idMap = new Map<string, string>()
   const remember = async (oldId: string) => {

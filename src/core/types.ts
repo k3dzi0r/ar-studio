@@ -68,6 +68,7 @@ export interface ARCard {
 
 export interface Collection {
   id: string
+  builtIn?: { id: string; revision: number }
   name: string
   /** only cards from active collections are loaded into the scanner */
   active: boolean

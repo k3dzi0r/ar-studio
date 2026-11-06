@@ -2,6 +2,7 @@ import { importPack } from './pack'
 
 export interface CatalogPack {
   id: string
+  revision?: number
   name: string
   description: string
   file: string
@@ -27,7 +28,8 @@ export const coverUrl = (p: CatalogPack) => `${base()}${p.cover}`
 
 /** Adds the pack to the user's library as an active collection. */
 export async function addBuiltIn(p: CatalogPack) {
-  const r = await fetch(`${base()}${p.file}`)
+  const revision = p.revision ?? 1
+  const r = await fetch(`${base()}${p.file}?v=${revision}`)
   if (!r.ok) throw new Error('Nie udało się pobrać kolekcji. Sprawdź połączenie z internetem (pobierasz ją tylko raz).')
-  return importPack(await r.blob(), { activate: true })
+  return importPack(await r.blob(), { activate: true, builtIn: { id: p.id, revision } })
 }

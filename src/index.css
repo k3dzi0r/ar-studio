@@ -175,3 +175,5 @@ a.chip { display: inline-flex; align-items: center; }
 .asset-results audio { width: 100%; }
 .asset-results a { text-decoration: underline; }
 .library-filters .search { width: auto; max-width: 100%; }
+
+.credit-link { text-decoration: underline; }

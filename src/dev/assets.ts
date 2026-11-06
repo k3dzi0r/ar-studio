@@ -3,10 +3,11 @@
  * (card artwork, GLB models, synthesized sounds). Not part of the shipped app.
  */
 import {
-  AnimationClip, BoxGeometry, CanvasTexture, ConeGeometry, DoubleSide, Euler, Group, Mesh,
+  AnimationClip, CanvasTexture, ConeGeometry, DoubleSide, Euler, Group, Mesh,
   MeshStandardMaterial, QuaternionKeyframeTrack, Quaternion, RingGeometry, Scene, SphereGeometry,
-  SRGBColorSpace, RepeatWrapping,
+  SRGBColorSpace, TextureLoader,
 } from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 
 export function rng(seed: number) {
@@ -175,16 +176,17 @@ const spin = (name: string, secs = 8): AnimationClip => {
   ])
 }
 
-function noiseTexture(seed: number, base: string, blobs: string[], n = 140, w = 512, h = 256) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h
-  const x = c.getContext('2d')!, r = rng(seed)
-  x.fillStyle = base; x.fillRect(0, 0, w, h)
-  for (let i = 0; i < n; i++) {
-    x.fillStyle = blobs[Math.floor(r() * blobs.length)]
-    x.beginPath(); x.ellipse(r() * w, r() * h, 8 + r() * 50, 6 + r() * 30, r() * 3, 0, 7); x.fill()
-  }
-  const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; t.wrapS = RepeatWrapping
-  return t
+const planetTextures = {
+  sun: new URL('./textures/sun.jpg', import.meta.url).href,
+  earth: new URL('./textures/earth_daymap.jpg', import.meta.url).href,
+  moon: new URL('./textures/moon.jpg', import.meta.url).href,
+  saturn: new URL('./textures/saturn.jpg', import.meta.url).href,
+}
+
+export const planetCredit = {
+  creator: 'Solar System Scope',
+  license: 'CC BY 4.0',
+  sourceUrl: 'https://www.solarsystemscope.com/textures/',
 }
 
 async function exportGlb(root: Group, clip: AnimationClip): Promise<Blob> {
@@ -195,62 +197,113 @@ async function exportGlb(root: Group, clip: AnimationClip): Promise<Blob> {
 
 export type Model = 'sun' | 'earth' | 'moon' | 'saturn' | 'cube' | 'ball' | 'pyramid'
 export async function modelGlb(kind: Model): Promise<Blob> {
-  const root = new Group(); root.name = 'Obiekt'
-  const std = (o: ConstructorParameters<typeof MeshStandardMaterial>[0]) => new MeshStandardMaterial({ roughness: 0.75, metalness: 0, ...o })
-  const sphere = (map: CanvasTexture, extra = {}) => new Mesh(new SphereGeometry(0.5, 48, 32), std({ map, ...extra }))
-  if (kind === 'sun') root.add(sphere(noiseTexture(1, '#ff9a1f', ['#ffd54f', '#ff6d00', '#ffe082']), { emissive: 0xff6a00, emissiveIntensity: 0.55 }))
-  else if (kind === 'earth') root.add(sphere(noiseTexture(2, '#1f6fd1', ['#3fae5a', '#2e8b4a', '#ffffff', '#6fcf86'], 90)))
-  else if (kind === 'moon') root.add(sphere(noiseTexture(3, '#b8b8c0', ['#8d8d96', '#d4d4da', '#777782'], 160)))
-  else if (kind === 'saturn') {
-    root.add(sphere(noiseTexture(4, '#e8c98a', ['#d2a85f', '#f3deae', '#b98d45'], 60)))
-    const ring = new Mesh(new RingGeometry(0.68, 1.0, 64), std({ color: 0xdcc08a, side: DoubleSide, roughness: 1 }))
-    ring.rotation.x = -Math.PI / 2 + 0.0
-    const tilt = new Group(); tilt.rotation.z = 0.4; tilt.add(ring); root.add(tilt)
-  } else if (kind === 'cube') root.add(new Mesh(new BoxGeometry(0.8, 0.8, 0.8), std({ color: 0xe0533a })))
-  else if (kind === 'ball') root.add(new Mesh(new SphereGeometry(0.5, 48, 32), std({ color: 0x2a62d9, roughness: 0.35 })))
-  else { const m = new Mesh(new ConeGeometry(0.6, 0.9, 4), std({ color: 0xe6a800 })); m.rotation.y = Math.PI / 4; root.add(m) }
-  return exportGlb(root, spin('Obiekt'))
+  const root = new Group()
+  root.name = 'Obiekt'
+  const material = (options: ConstructorParameters<typeof MeshStandardMaterial>[0]) =>
+    new MeshStandardMaterial({ roughness: 0.42, ...options })
+
+  if (kind === 'sun' || kind === 'earth' || kind === 'moon' || kind === 'saturn') {
+    const map = await new TextureLoader().loadAsync(planetTextures[kind])
+    map.colorSpace = SRGBColorSpace
+    map.userData.mimeType = 'image/jpeg'
+    const surface = material({ map, roughness: kind === 'earth' ? 0.52 : 0.85 })
+    if (kind === 'sun') {
+      surface.emissive.set(0xffffff)
+      surface.emissiveMap = map
+      surface.emissiveIntensity = 0.7
+      surface.color.set(0x806040)
+    }
+    const planet = new Mesh(new SphereGeometry(0.5, 64, 40), surface)
+    root.add(planet)
+    if (kind === 'saturn') {
+      const tilt = new Group()
+      tilt.rotation.z = 0.46
+      tilt.add(planet)
+      const bands = [
+        [0.61, 0.66, 0x846f5d], [0.66, 0.72, 0xa5957c], [0.72, 0.82, 0xd7bd97],
+        [0.82, 0.86, 0xe8cfa8], [0.885, 0.935, 0xaf9374], [0.935, 1, 0xc8ad86],
+      ]
+      for (const [inner, outer, color] of bands) {
+        const ring = new Mesh(new RingGeometry(inner, outer, 96), material({ color, side: DoubleSide, roughness: 0.9 }))
+        ring.rotation.x = -Math.PI / 2
+        tilt.add(ring)
+      }
+      root.add(tilt)
+    }
+  } else if (kind === 'cube') {
+    root.add(new Mesh(new RoundedBoxGeometry(0.84, 0.84, 0.84, 5, 0.045), material({ color: 0xbc493b })))
+  } else if (kind === 'ball') {
+    const canvas = document.createElement('canvas')
+    canvas.width = 4
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')!
+    const enamel = ctx.createLinearGradient(0, 0, 0, 256)
+    enamel.addColorStop(0, '#5bb8d5')
+    enamel.addColorStop(0.38, '#2565a6')
+    enamel.addColorStop(0.39, '#d2eef4')
+    enamel.addColorStop(0.43, '#d2eef4')
+    enamel.addColorStop(0.44, '#2869ad')
+    enamel.addColorStop(1, '#13345d')
+    ctx.fillStyle = enamel
+    ctx.fillRect(0, 0, 4, 256)
+    const map = new CanvasTexture(canvas)
+    map.colorSpace = SRGBColorSpace
+    root.add(new Mesh(new SphereGeometry(0.5, 64, 40), material({ map })))
+  } else {
+    const pyramid = new Mesh(new ConeGeometry(0.62, 0.87, 4), material({ color: 0xcc8c28, flatShading: true }))
+    pyramid.rotation.y = Math.PI / 4
+    root.add(pyramid)
+  }
+  return exportGlb(root, spin('Obiekt', 10))
 }
 
 // ───────────── audio (WAV) ─────────────
-const RATE = 22050
-type Wave = 'sine' | 'triangle' | 'saw' | 'square'
-interface Note { f: number; d: number; wave?: Wave; vol?: number; to?: number }
+const RATE = 32000
+type Voice = 'bell' | 'felt' | 'pad'
+type Note = [semitone: number, start: number, length: number, gain?: number]
+const timbres = {
+  bell: { attack: 0.012, overtone: 2.76, decay: 5 },
+  felt: { attack: 0.023, overtone: 2, decay: 3.4 },
+  pad: { attack: 0.15, overtone: 2.01, decay: 1.2 },
+}
 
-export function wav(notes: Note[], gap = 0.02): Blob {
-  const out: number[] = []
-  for (const n of notes) {
-    const len = Math.floor(n.d * RATE)
-    let phase = 0
-    for (let i = 0; i < len; i++) {
-      const t = i / len
-      const f = n.to ? n.f + (n.to - n.f) * t : n.f
-      phase += (2 * Math.PI * f) / RATE
-      const p = phase % (2 * Math.PI) / (2 * Math.PI)
-      const v = n.wave === 'saw' ? 2 * p - 1 : n.wave === 'square' ? (p < 0.5 ? 1 : -1) * 0.6
-        : n.wave === 'triangle' ? 4 * Math.abs(p - 0.5) - 1 : Math.sin(phase)
-      const env = Math.min(1, i / (RATE * 0.01)) * Math.pow(1 - t, 1.4)
-      out.push(v * env * (n.vol ?? 0.5))
+function wav(voice: Voice, notes: Note[]): Blob {
+  const { attack, overtone, decay } = timbres[voice]
+  const samples = Math.ceil((Math.max(...notes.map(([, start, length]) => start + length)) + 0.18) * RATE)
+  const signal = new Float32Array(samples)
+  for (const [semitone, start, length, gain = 0.25] of notes) {
+    const f = 261.63 * Math.pow(2, semitone / 12)
+    const offset = Math.round(start * RATE)
+    const echo = Math.round(0.13 * RATE)
+    for (let i = 0; i < Math.floor(length * RATE); i++) {
+      const t = i / RATE
+      const phase = 2 * Math.PI * f * t
+      const envelope = Math.sin(Math.PI / 2 * Math.min(1, t / attack))
+        * Math.exp(-decay * t) * Math.min(1, (length - t) / 0.09)
+      const sample = gain * envelope * (
+        0.72 * Math.sin(phase) + 0.17 * Math.sin(phase * overtone) * Math.exp(-4 * t)
+        + 0.11 * Math.sin(phase * 1.003)
+      )
+      signal[offset + i] += sample
+      signal[offset + i + echo] += sample * 0.16
     }
-    for (let i = 0; i < gap * RATE; i++) out.push(0)
   }
-  const buf = new ArrayBuffer(44 + out.length * 2)
+  const buf = new ArrayBuffer(44 + samples * 2)
   const dv = new DataView(buf)
   const str = (o: number, s: string) => [...s].forEach((ch, i) => dv.setUint8(o + i, ch.charCodeAt(0)))
-  str(0, 'RIFF'); dv.setUint32(4, 36 + out.length * 2, true); str(8, 'WAVE'); str(12, 'fmt ')
+  str(0, 'RIFF'); dv.setUint32(4, 36 + samples * 2, true); str(8, 'WAVE'); str(12, 'fmt ')
   dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true)
   dv.setUint32(24, RATE, true); dv.setUint32(28, RATE * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true)
-  str(36, 'data'); dv.setUint32(40, out.length * 2, true)
-  out.forEach((v, i) => dv.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v)) * 32767, true))
+  str(36, 'data'); dv.setUint32(40, samples * 2, true)
+  signal.forEach((v, i) => dv.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v)) * 32767, true))
   return new Blob([buf], { type: 'audio/wav' })
 }
 
-const N = (semi: number) => 261.63 * Math.pow(2, semi / 12) // C4 + semitones
 export const sounds = {
-  joy: () => wav([N(0), N(4), N(7), N(12)].map((f) => ({ f, d: 0.16, wave: 'triangle' as const })).concat([{ f: N(12), d: 0.5, wave: 'triangle' }])),
-  sad: () => wav([N(3), N(0), N(-2), N(-5)].map((f) => ({ f, d: 0.4, wave: 'sine' as const })).concat([{ f: N(-5), d: 0.7, wave: 'sine' }])),
-  angry: () => wav([{ f: 110, d: 0.25, wave: 'saw', vol: 0.45 }, { f: 98, d: 0.25, wave: 'saw', vol: 0.45 }, { f: 110, d: 0.45, wave: 'saw', vol: 0.45 }]),
-  surprise: () => wav([{ f: N(0), to: N(14), d: 0.35, wave: 'triangle' }, { f: N(14), d: 0.35, wave: 'sine' }]),
-  note: (semi: number) => wav([{ f: N(semi), d: 0.9, wave: 'sine' }]),
-  space: (semi: number) => wav([{ f: N(semi), d: 0.6, wave: 'sine', vol: 0.4 }, { f: N(semi + 7), d: 0.9, wave: 'sine', vol: 0.3 }]),
+  joy: () => wav('bell', [[4, 0, 0.55], [7, 0.12, 0.55], [12, 0.25, 0.72], [16, 0.25, 0.6, 0.15]]),
+  sad: () => wav('felt', [[3, 0, 0.7], [0, 0.33, 0.77], [-5, 0.68, 0.88], [-12, 0.68, 0.88, 0.17]]),
+  angry: () => wav('felt', [[-17, 0, 0.45], [-11, 0, 0.46, 0.19], [-19, 0.28, 0.67], [-13, 0.29, 0.62, 0.2]]),
+  surprise: () => wav('bell', [[-2, 0, 0.35, 0.16], [10, 0.12, 0.5], [17, 0.22, 0.7], [22, 0.23, 0.65, 0.12]]),
+  note: (semi: number) => wav('bell', [[semi, 0, 0.8], [semi + 12, 0.07, 0.63, 0.15]]),
+  space: (semi: number) => wav('pad', [[semi - 12, 0, 1.55, 0.2], [semi, 0.1, 1.45], [semi + 7, 0.32, 1.23, 0.19], [semi + 14, 0.58, 0.95, 0.12]]),
 }

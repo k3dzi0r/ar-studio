@@ -7,7 +7,7 @@
       "description": "Słońce, Ziemia, Księżyc i Saturn jako obracające się modele 3D z dźwiękiem.",
       "file": "kosmos.arpack",
       "cover": "kosmos.jpg",
-      "size": 3405258,
+      "size": 4261278,
       "cards": [
         {
           "name": "Słońce",
@@ -25,7 +25,8 @@
           "name": "Saturn",
           "score": 88
         }
-      ]
+      ],
+      "revision": 2
     },
     {
       "id": "ksztalty",
@@ -33,7 +34,7 @@
       "description": "Sześcian, kula i piramida — obracające się bryły, każda z innym dźwiękiem.",
       "file": "ksztalty.arpack",
       "cover": "ksztalty.jpg",
-      "size": 2419730,
+      "size": 2671722,
       "cards": [
         {
           "name": "Sześcian",
@@ -47,7 +48,8 @@
           "name": "Piramida",
           "score": 88
         }
-      ]
+      ],
+      "revision": 2
     },
     {
       "id": "emocje",
@@ -55,7 +57,7 @@
       "description": "Radość, smutek, złość i zdziwienie: unosząca się buźka i dźwięk pasujący do emocji.",
       "file": "emocje.arpack",
       "cover": "emocje.jpg",
-      "size": 3710347,
+      "size": 3800337,
       "cards": [
         {
           "name": "Radość",
@@ -73,7 +75,8 @@
           "name": "Zdziwienie",
           "score": 86
         }
-      ]
+      ],
+      "revision": 2
     }
   ]
 }
