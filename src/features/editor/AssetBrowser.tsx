@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { downloadAsset, searchModels, searchOpenverse, type AssetKind, type CatalogAsset } from '../../core/assets/search'
 import type { AssetCredit } from '../../core/types'
 
-export default function AssetBrowser({ onAdd, onBusy, onClose }: {
+export default function AssetBrowser({ onAdd, onBusy, onClose, forTarget = false }: {
   onAdd: (kind: AssetKind, file: File, credit: AssetCredit) => void
   onBusy: (busy: boolean) => void
   onClose: () => void
+  forTarget?: boolean
 }) {
-  const [kind, setKind] = useState<AssetKind>('model3d')
+  const [kind, setKind] = useState<AssetKind>(forTarget ? 'image2d' : 'model3d')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<CatalogAsset[] | null>(null)
   const [searching, setSearching] = useState(false)
@@ -74,14 +75,18 @@ export default function AssetBrowser({ onAdd, onBusy, onClose }: {
   return (
     <div className="asset-browser" role="region" aria-label="Katalog zasobów">
       <form className="field" onSubmit={(e) => { e.preventDefault(); void search() }}>
-        <label htmlFor="asset-kind">Rodzaj zasobu</label>
-        <select id="asset-kind" value={kind} disabled={downloading !== null}
-          onChange={(e) => { reset(); setQuery(''); setKind(e.target.value as AssetKind) }}>
-          <option value="model3d">Modele 3D · Kenney</option>
-          <option value="image2d">Obrazy · Openverse</option>
-          <option value="audio">Dźwięki · Openverse</option>
-        </select>
-        <label htmlFor="asset-query">Szukaj zasobu</label>
+        {!forTarget && (
+          <>
+            <label htmlFor="asset-kind">Rodzaj zasobu</label>
+            <select id="asset-kind" value={kind} disabled={downloading !== null}
+              onChange={(e) => { reset(); setQuery(''); setKind(e.target.value as AssetKind) }}>
+              <option value="model3d">Modele 3D · Kenney</option>
+              <option value="image2d">Obrazy · Openverse</option>
+              <option value="audio">Dźwięki · Openverse</option>
+            </select>
+          </>
+        )}
+        <label htmlFor="asset-query">{forTarget ? 'Szukaj obrazu w Openverse' : 'Szukaj zasobu'}</label>
         <div className="row wrap">
           <input id="asset-query" className="search" type="search" value={query} disabled={downloading !== null}
             onChange={(e) => { reset(); setQuery(e.target.value) }} />
@@ -107,7 +112,7 @@ export default function AssetBrowser({ onAdd, onBusy, onClose }: {
                 <a href={asset.credit.sourceUrl} target="_blank" rel="noreferrer">Źródło ↗</a>
               </div>
               <button type="button" className="btn small" disabled={downloading !== null}
-                onClick={() => void add(asset)}>{downloading === asset.id ? 'Pobieranie…' : 'Dodaj do karty'}</button>
+                onClick={() => void add(asset)}>{downloading === asset.id ? 'Pobieranie…' : forTarget ? 'Użyj jako znacznika' : 'Dodaj do karty'}</button>
             </li>
           ))}
         </ul>

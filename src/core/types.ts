@@ -58,6 +58,7 @@ export interface ARCard {
   collectionIds: string[]
   /** recognised image (downscaled copy used for compilation + preview) */
   imageAssetId: string
+  imageCredit?: AssetCredit
   /** compiled MindAR target data (.mind) */
   mindAssetId: string
   /** height / width of the target */

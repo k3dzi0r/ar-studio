@@ -27,7 +27,7 @@ Są generowane programowo (`src/dev/`): grafiki kart, modele GLB, dźwięki WAV.
 
 ## Katalog zasobów w kreatorze
 
-Po dodaniu obrazu do rozpoznawania wybierz „Szukaj w katalogu”. Modele z [Toy Car Kit](https://kenney.nl/assets/toy-car-kit) (Kenney, CC0) są dostępne offline po instalacji pamięci podręcznej PWA. Obrazy i dźwięki z [Openverse](https://api.openverse.org/v1/) wymagają internetu i są ograniczone do CC0 i domeny publicznej. Jeśli źródło blokuje pobranie w przeglądarce, otwórz link „Źródło” i wgraj pobrany plik ręcznie. Karta zapisuje pobrany plik lokalnie, razem z informacją o licencji i źródle.
+W kroku „Obraz do rozpoznawania” wybierz „Szukaj obrazu”, aby znaleźć znacznik w Openverse. Zawartość AR możesz dodać osobno przyciskiem „Szukaj w katalogu”. Modele z [Toy Car Kit](https://kenney.nl/assets/toy-car-kit) (Kenney, CC0) są dostępne offline po instalacji pamięci podręcznej PWA. Obrazy i dźwięki z [Openverse](https://api.openverse.org/v1/) wymagają internetu i są ograniczone do CC0 i domeny publicznej. Jeśli źródło blokuje pobranie w przeglądarce, otwórz link „Źródło” i wgraj pobrany plik ręcznie. Karta zapisuje pobrany plik lokalnie, razem z informacją o licencji i źródle.
 
 ## Architektura (`src/`)
 

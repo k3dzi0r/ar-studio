@@ -19,6 +19,7 @@ type Draft = ContentItem & { blob?: Blob }
 
 interface Target {
   image: Blob
+  credit?: AssetCredit
   mind: Uint8Array | null // null = unchanged, keep stored mind
   aspect: number
   quality: QualityReport
@@ -36,7 +37,8 @@ export default function EditorPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showAssets, setShowAssets] = useState(false)
+  const [catalog, setCatalog] = useState<'target' | 'content' | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
   const [assetBusy, setAssetBusy] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(isNew)
@@ -53,7 +55,7 @@ export default function EditorPage() {
       orig.current = card
       const image = (await repo.getAsset(card.imageAssetId))!.blob
       setName(card.name)
-      setTarget({ image, mind: null, aspect: card.aspect, quality: card.quality })
+      setTarget({ image, credit: card.imageCredit, mind: null, aspect: card.aspect, quality: card.quality })
       const drafts: Draft[] = []
       for (const c of card.contents) {
         drafts.push({ ...c, blob: c.assetId ? (await repo.getAsset(c.assetId))?.blob : undefined })
@@ -108,16 +110,16 @@ export default function EditorPage() {
 
   // ---- step 1: image → target
   const onImage = useCallback(
-    async (file: File | undefined) => {
+    async (file: File | undefined, credit?: AssetCredit) => {
       if (!file) return
-      setError(null)
+      setImageError(null)
       setProgress(0)
       try {
         const t = await compileTarget(file, setProgress)
-        setTarget({ image: t.image, mind: t.mind, aspect: t.aspect, quality: t.quality })
+        setTarget({ image: t.image, credit, mind: t.mind, aspect: t.aspect, quality: t.quality })
         setName((n) => n || file.name.replace(/\.[^.]+$/, ''))
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Nie udało się przygotować obrazu.')
+        setImageError(e instanceof Error ? e.message : 'Nie udało się przygotować obrazu.')
       } finally {
         setProgress(null)
       }
@@ -192,6 +194,7 @@ export default function EditorPage() {
         updatedAt: Date.now(),
         collectionIds: old?.collectionIds ?? [DEFAULT_COLLECTION_ID],
         imageAssetId: imageAssetId!,
+        imageCredit: target.credit,
         mindAssetId: mindAssetId!,
         aspect: target.aspect,
         quality: target.quality,
@@ -230,11 +233,24 @@ export default function EditorPage() {
           {/* 1 — image */}
           <div className="step">
             <h2><span>1</span> Obraz do rozpoznawania</h2>
-            <label className="btn">
-              {target ? 'Zmień obraz' : 'Wgraj obraz (PNG, JPG, WebP)'}
-              <input type="file" accept="image/png,image/jpeg,image/webp" hidden
-                onChange={(e) => { onImage(e.target.files?.[0]); e.target.value = '' }} />
-            </label>
+            <div className="row wrap">
+              <label className={`btn ${saving || assetBusy || progress !== null ? 'disabled' : ''}`}>
+                {target ? 'Zmień obraz' : 'Wgraj obraz (PNG, JPG, WebP)'}
+                <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                  disabled={saving || assetBusy || progress !== null}
+                  onChange={(e) => { setCatalog(null); void onImage(e.target.files?.[0]); e.target.value = '' }} />
+              </label>
+              <button className="btn" disabled={saving || assetBusy || progress !== null} aria-expanded={catalog === 'target'}
+                onClick={() => setCatalog(catalog === 'target' ? null : 'target')}>
+                {catalog === 'target' ? 'Zamknij wyszukiwanie' : 'Szukaj obrazu'}
+              </button>
+            </div>
+            {catalog === 'target' && (
+              <AssetBrowser forTarget onAdd={(_, file, credit) => void onImage(file, credit)}
+                onBusy={setAssetBusy} onClose={() => setCatalog(null)} />
+            )}
+            {imageError && <p className="error" role="alert">{imageError}</p>}
+            {target?.credit && <p className="muted small">{[target.credit.creator, target.credit.license].filter(Boolean).join(' · ')}</p>}
             {progress !== null && (
               <div className="progress" role="progressbar" aria-valuenow={Math.round(progress)}>
                 <i style={{ width: `${progress}%` }} />
@@ -262,11 +278,11 @@ export default function EditorPage() {
                 )
               ))}
             </div>
-            <button className="btn" disabled={!target || assetBusy || saving} aria-expanded={showAssets}
-              onClick={() => setShowAssets((open) => !open)}>
-              {showAssets ? 'Zamknij katalog' : 'Szukaj w katalogu'}
+            <button className="btn" disabled={!target || assetBusy || saving || progress !== null} aria-expanded={catalog === 'content'}
+              onClick={() => setCatalog(catalog === 'content' ? null : 'content')}>
+              {catalog === 'content' ? 'Zamknij katalog' : 'Szukaj w katalogu'}
             </button>
-            {showAssets && <AssetBrowser onAdd={addContent} onBusy={setAssetBusy} onClose={() => setShowAssets(false)} />}
+            {catalog === 'content' && <AssetBrowser onAdd={addContent} onBusy={setAssetBusy} onClose={() => setCatalog(null)} />}
             <p className="muted small">Model: GLB (jeden plik z teksturami) · dźwięk: MP3/WAV/OGG · wideo: MP4/WebM · obraz: PNG/JPG/WebP. Można łączyć kilka zawartości na jednej karcie.</p>
             {contents.length > 0 && (
               <ul className="items">
