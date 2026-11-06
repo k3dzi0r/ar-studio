@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { normalizeSearch } from '../../core/assets/search'
 import { repo, uid } from '../../core/storage/db'
@@ -16,6 +16,7 @@ export default function LibraryPage() {
   const [collections, setCollections] = useState<Collection[]>([])
   const [query, setQuery] = useState('')
   const [collectionFilter, setCollectionFilter] = useState('')
+  const importInput = useRef<HTMLInputElement>(null)
   const pwa = useInstallPrompt()
   const nav = useNavigate()
   const [catalog, setCatalog] = useState<CatalogPack[]>([])
@@ -115,11 +116,9 @@ export default function LibraryPage() {
           <p className="muted">Zamień dowolny obraz w kartę rozszerzonej rzeczywistości.</p>
         </div>
         <div className="row wrap">
-          <label className="btn">
-            Importuj
-            <input type="file" accept=".arpack,.zip,application/zip" hidden
-              onChange={(e) => { onImport(e.target.files?.[0]); e.target.value = '' }} />
-          </label>
+          <button className="btn" onClick={() => importInput.current?.click()}>Importuj karty (.arpack)</button>
+          <input ref={importInput} type="file" accept=".arpack,.zip,application/zip" hidden
+            onChange={(e) => { onImport(e.target.files?.[0]); e.target.value = '' }} />
           <Link to="/edit" className="btn">+ Nowa karta</Link>
           <Link to="/scan" className={`btn primary big ${activeCount ? '' : 'disabled'}`}
             aria-disabled={!activeCount}
@@ -231,6 +230,10 @@ export default function LibraryPage() {
               <option value="">Wszystkie kolekcje</option>
               {collections.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}
             </select>
+            <button className="btn small" disabled={!shown.length}
+              onClick={() => exportCards(shown, collections.find((c) => c.id === collectionFilter)?.name ?? 'Moje karty')}>
+              Eksportuj widoczne ({shown.length})
+            </button>
           </div>
         </div>
         {cards === null ? (
@@ -289,7 +292,7 @@ function CardTile({ card, collections, onDelete, onMove, onExport }: {
           <Link to={`/scan/${card.id}`} className="btn primary small">Testuj</Link>
           <Link to={`/edit/${card.id}`} className="btn small">Edytuj</Link>
           <Link to={`/print?card=${card.id}`} className="btn ghost small">Drukuj</Link>
-          <button className="btn ghost small" onClick={onExport}>Eksport</button>
+          <button className="btn ghost small" onClick={onExport}>Eksportuj kartę</button>
           <button className="btn ghost small danger" onClick={onDelete}>Usuń</button>
         </div>
       </div>

@@ -77,6 +77,33 @@
         }
       ],
       "revision": 2
+    },
+    {
+      "id": "zwierzeta",
+      "revision": 1,
+      "name": "Zwierzęta",
+      "description": "Pies, kot, krowa i koń. Wydrukuj karty, zeskanuj zdjęcia i posłuchaj prawdziwych odgłosów.",
+      "file": "zwierzeta.arpack",
+      "cover": "zwierzeta.jpg",
+      "size": 4355228,
+      "cards": [
+        {
+          "name": "Pies",
+          "score": 89
+        },
+        {
+          "name": "Kot",
+          "score": 90
+        },
+        {
+          "name": "Krowa",
+          "score": 92
+        },
+        {
+          "name": "Koń",
+          "score": 90
+        }
+      ]
     }
   ]
 }

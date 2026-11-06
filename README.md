@@ -20,10 +20,16 @@ Po pierwszym załadowaniu service worker zapisuje całą aplikację (~2,2 MB) i 
 
 ## Wbudowane kolekcje
 
-`public/library/*.arpack` + `index.json`: Kosmos (4), Kształty (3), Emocje (4). Użytkownik dodaje je z biblioteki („Dodaj i skanuj"), drukuje karty (`Drukuj`) i skanuje. Paczki pobierają się raz i są cache'owane do pracy offline. Odświeżone kolekcje zachowują dotychczasowe znaczniki. Przycisk „Dodaj odświeżoną wersję” dodaje nową kolekcję i wyłącza poprzednią w skanerze, zachowując jej karty.
+`public/library/*.arpack` + `index.json`: Kosmos (4), Kształty (3), Emocje (4), Zwierzęta (4). Użytkownik dodaje je z biblioteki („Dodaj i skanuj"), drukuje karty (`Drukuj`) i skanuje. Paczki pobierają się raz i są cache'owane do pracy offline. Odświeżone kolekcje zachowują dotychczasowe znaczniki. Przycisk „Dodaj odświeżoną wersję” dodaje nową kolekcję i wyłącza poprzednią w skanerze, zachowując jej karty.
 
 Tekstury Słońca, Ziemi, Księżyca i Saturna pochodzą z [Solar System Scope](https://www.solarsystemscope.com/textures/) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). Zmniejszono je i osadzono w modelach GLB.
 Są generowane programowo (`src/dev/`): grafiki kart, modele GLB, dźwięki WAV. Regeneracja (tylko dev): `NO_SSL=1 npm run dev`, otwórz `/#/dev/build-library`, „Generuj paczki" (~3 min; strona musi być widoczna). **Każda karta musi mieć unikalny wzór** — identyczne elementy graficzne na różnych kartach powodują fałszywe rozpoznania.
+
+Kolekcja Zwierzęta wykorzystuje zdjęcia z Flickr oraz nagrania z Freesound na licencji CC0. Informacje o źródłach są zapisane w kartach i paczce.
+
+## Przenoszenie własnych kart
+
+W bibliotece wybierz „Eksportuj kartę” lub przefiltruj karty i kliknij „Eksportuj widoczne”. Na drugim urządzeniu wybierz „Importuj karty (.arpack)”, wskaż pobraną paczkę i włącz zaimportowaną kolekcję w skanerze. Paczka zawiera znaczniki, dane rozpoznawania i wszystkie pliki zawartości.
 
 ## Katalog zasobów w kreatorze
 

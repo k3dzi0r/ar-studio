@@ -27,6 +27,7 @@ export function assetIdsOf(card: ARCard): string[] {
 }
 
 export async function exportPack(cards: ARCard[], name: string): Promise<Blob> {
+  if (cards.length > MAX_CARDS) throw new Error(`Paczka może zawierać maksymalnie ${MAX_CARDS} kart. Zawęź wybór i spróbuj ponownie.`)
   const zip = new JSZip()
   const assets: Manifest['assets'] = []
   const seen = new Set<string>()
